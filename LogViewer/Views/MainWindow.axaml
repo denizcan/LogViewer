@@ -15,6 +15,15 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-    <TextBlock Text="{Binding Greeting}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+        <DataGrid 
+            ItemsSource="{Binding Entries}" 
+            IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Time" Binding="{Binding Timestamp}" Width="160"/>
+                <DataGridTextColumn Header="Id" Binding="{Binding EventId}" Width="60"/>
+                <DataGridTextColumn Header="LogLevel" Binding="{Binding LogLevel}" Width="120"/>
+                <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*"/>
+            </DataGrid.Columns>
+        </DataGrid>
 
 </Window>
