@@ -4,9 +4,14 @@ using System.IO;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Data;
+using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 using LogViewer.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -16,6 +21,9 @@ namespace LogViewer.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     JsonSerializerOptions _jsonOptions;
+
+    [ObservableProperty]
+    private string _title = "LogViewer";
 
     [ObservableProperty]
     private ObservableCollection<LogEntryModel> _entries;
@@ -74,6 +82,36 @@ public partial class MainWindowViewModel : ViewModelBase
 
         }
         Entries = entries;
+        Title = $"LogViewer - {path}";
+    }
+    [RelayCommand]
+    public async Task Open()   
+    {
+        if (Application.Current!.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var files = await desktop!.MainWindow!.StorageProvider.OpenFilePickerAsync(
+                new FilePickerOpenOptions
+                {
+                    Title = "Open Text File",
+                    AllowMultiple = false,
+                    FileTypeFilter = [
+                        new FilePickerFileType("Log files")
+                        {
+                            Patterns = new[] { "*.log" }
+                        }]
+                });
+            if (files.Count > 0)
+                LoadFile(files[0].TryGetLocalPath()!);
+        }
+    }
+
+    [RelayCommand]
+    public void Exit()
+    {
+        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            desktop.Shutdown();
+        }
     }
 
     partial void OnSelectedEntryChanged(LogEntryModel? value)
