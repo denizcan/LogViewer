@@ -15,15 +15,23 @@
         <vm:MainWindowViewModel/>
     </Design.DataContext>
 
-        <DataGrid 
+	<Grid ColumnDefinitions="800,4,*">
+        <DataGrid Grid.Column="0"
             ItemsSource="{Binding Entries}" 
-            IsReadOnly="True">
+            IsReadOnly="True"
+			SelectedItem="{Binding SelectedEntry}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Time" Binding="{Binding Timestamp}" Width="160"/>
+                <DataGridTextColumn Header="Time" Binding="{Binding Timestamp}" Width="180"/>
                 <DataGridTextColumn Header="Id" Binding="{Binding EventId}" Width="60"/>
                 <DataGridTextColumn Header="LogLevel" Binding="{Binding LogLevel}" Width="120"/>
                 <DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*"/>
             </DataGrid.Columns>
         </DataGrid>
+		
+		<GridSplitter Grid.Column="1" Background="DarkGray" ResizeDirection="Auto"/>
+
+		<TextBox Grid.Column="2" Text="{Binding SelectedEntryStateText}"/> 
+	</Grid>
+
 
 </Window>

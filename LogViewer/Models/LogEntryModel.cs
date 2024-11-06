@@ -9,9 +9,11 @@ public class LogEntryModel
 {
     public DateTime Timestamp { get; set; }
     public uint EventId { get; set; }
-    public string LogLevel { get; set; } = string.Empty;
+    public LogLevel LogLevel { get; set; }
     public string Category { get; set; } = string.Empty;
     public string Message { get; set; } = string.Empty;
     public string? Exception { get; set; }
     public JsonObject? State { get; set; }
+    public string StateText { get; set; } = string.Empty;
+
 }
