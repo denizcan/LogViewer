@@ -2,8 +2,11 @@
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Net;
+using System.Reflection.Metadata;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -114,13 +117,40 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
+    //private Regex _exceptionRegex = new Regex(@"^\s*at\s*(?<method>.*)\s*in.*\\(?<file>.*):line\s?(?<lineNumber>\d*)");
+    private Regex _exceptionRegex = new Regex(@"^\s*at.*\.(?<method>.*\..*\(.*\))\s*in.*\\(?<file>.*):line\s?(?<lineNumber>\d*)");
+    private Regex _filenameRegex = new Regex(@".*\\(?<fileName>.*\.cs)");
+
     partial void OnSelectedEntryChanged(LogEntryModel? value)
     {
+        var sb = new StringBuilder();
+        var exception = value?.Exception;
+
+        if (exception != null)
+        {
+            //sb.AppendLine("Exception");
+            var lines = exception.Split("\r\n");
+            sb.AppendLine(lines[0]);
+            foreach (var line in lines)
+            {
+                var match = _exceptionRegex.Match(line); 
+                if (match.Success)
+                    sb.AppendLine($"    {match.Groups["method"]}   {match.Groups["file"]}   {match.Groups["lineNumber"]}: ");
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("Raw Exception:");
+            sb.AppendLine(exception);
+            sb.AppendLine();
+        }
+
         var state = value?.State;
         if (state != null)
-            SelectedEntryStateText = JsonSerializer.Serialize(state, _jsonOptions);
-        else
-            SelectedEntryStateText = string.Empty;
+        {
+            sb.AppendLine("State:");
+            sb.Append(JsonSerializer.Serialize(state, _jsonOptions));
+        }
 
+        SelectedEntryStateText = sb.ToString();
     }
 }
