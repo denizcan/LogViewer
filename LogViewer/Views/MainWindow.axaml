@@ -35,7 +35,8 @@
 				SelectedItem="{Binding SelectedEntry}">
 				<DataGrid.Columns>
 					<DataGridTextColumn Header="Time" Binding="{Binding Timestamp}" Width="180"/>
-					<DataGridTextColumn Header="Id" Binding="{Binding EventId}" Width="60"/>
+					<DataGridTextColumn Header="Id" Binding="{Binding EventId}" Width="140"/>
+					<DataGridTextColumn Header="Name" Binding="{Binding EventName}" Width="140"/>
 					<DataGridTextColumn Header="LogLevel" Binding="{Binding LogLevel}" Width="120"/>
 					<DataGridTextColumn Header="Message" Binding="{Binding Message}" Width="*"/>
 				</DataGrid.Columns>

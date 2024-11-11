@@ -5,6 +5,7 @@ using System.Net;
 using System.Reflection.Metadata;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -18,6 +19,7 @@ using CommunityToolkit.Mvvm.Input;
 using LogViewer.Models;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using MsBox.Avalonia;
 
 namespace LogViewer.ViewModels;
 
@@ -72,20 +74,30 @@ public partial class MainWindowViewModel : ViewModelBase
             _entries = [];
     }
     
-    public void LoadFile(string path)
+    public async Task LoadFileAsync(string path)
     {
-        var reader = new StreamReader(path);
-        ObservableCollection<LogEntryModel> entries = [];
-
-        while (reader.EndOfStream == false)
+        try
         {
-            var line = reader.ReadLine();
-            var entry = JsonSerializer.Deserialize<LogEntryModel>(line!, _jsonOptions);
-            entries.Add(entry!);
+            var reader = new StreamReader(File.OpenRead(path));
+            ObservableCollection<LogEntryModel> entries = [];
 
+            while (reader.EndOfStream == false)
+            {
+                var line = reader.ReadLine();
+                var entry = JsonSerializer.Deserialize<LogEntryModel>(line!, _jsonOptions);
+                entries.Add(entry!);
+
+            }
+            Entries = entries;
+            Title = $"LogViewer - {path}";
         }
-        Entries = entries;
-        Title = $"LogViewer - {path}";
+        catch (Exception ex)
+        {
+            var box = MessageBoxManager.GetMessageBoxStandard(
+                "Error while loading log file", ex.Message,
+                MsBox.Avalonia.Enums.ButtonEnum.Ok);
+            await box.ShowAsync();
+        }
     }
     [RelayCommand]
     public async Task Open()   
@@ -95,16 +107,16 @@ public partial class MainWindowViewModel : ViewModelBase
             var files = await desktop!.MainWindow!.StorageProvider.OpenFilePickerAsync(
                 new FilePickerOpenOptions
                 {
-                    Title = "Open Text File",
+                    Title = "Open Json Formatted Log File",
                     AllowMultiple = false,
                     FileTypeFilter = [
-                        new FilePickerFileType("Log files")
+                        new FilePickerFileType("Json Log files")
                         {
-                            Patterns = new[] { "*.log" }
+                            Patterns = new[] { "*.jlog" }
                         }]
                 });
             if (files.Count > 0)
-                LoadFile(files[0].TryGetLocalPath()!);
+                await LoadFileAsync(files[0].TryGetLocalPath()!);
         }
     }
 
@@ -117,9 +129,7 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    //private Regex _exceptionRegex = new Regex(@"^\s*at\s*(?<method>.*)\s*in.*\\(?<file>.*):line\s?(?<lineNumber>\d*)");
     private Regex _exceptionRegex = new Regex(@"^\s*at.*\.(?<method>.*\..*\(.*\))\s*in.*\\(?<file>.*):line\s?(?<lineNumber>\d*)");
-    private Regex _filenameRegex = new Regex(@".*\\(?<fileName>.*\.cs)");
 
     partial void OnSelectedEntryChanged(LogEntryModel? value)
     {
@@ -128,14 +138,13 @@ public partial class MainWindowViewModel : ViewModelBase
 
         if (exception != null)
         {
-            //sb.AppendLine("Exception");
             var lines = exception.Split("\r\n");
             sb.AppendLine(lines[0]);
             foreach (var line in lines)
             {
                 var match = _exceptionRegex.Match(line); 
                 if (match.Success)
-                    sb.AppendLine($"    {match.Groups["method"]}   {match.Groups["file"]}   {match.Groups["lineNumber"]}: ");
+                    sb.AppendLine($"    {match.Groups["method"]} {match.Groups["file"]} {match.Groups["lineNumber"]}: ");
             }
 
             sb.AppendLine();
@@ -149,6 +158,19 @@ public partial class MainWindowViewModel : ViewModelBase
         {
             sb.AppendLine("State:");
             sb.Append(JsonSerializer.Serialize(state, _jsonOptions));
+            sb.AppendLine();
+
+            if (value!.EventName == "RestPost" || value!.EventName == "RestResponse")
+            {
+                sb.AppendLine();
+                sb.AppendLine("Json:");
+                var jsonValue = state["json"]!.AsValue().ToString();
+                var jsonObject = JsonSerializer.Deserialize<JsonObject>(jsonValue, _jsonOptions);
+                var jsonString = JsonSerializer.Serialize(jsonObject, _jsonOptions);
+                sb.Append(jsonString);
+            }
+            
+
         }
 
         SelectedEntryStateText = sb.ToString();
